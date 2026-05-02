@@ -20,7 +20,7 @@ jobs:
             echo "The Chaos Monkey has woken up! (Rolled $ROLL)"
             echo "strike=true" >> $GITHUB_OUTPUT
           else
-            echo "The Chaos Monkey is sleeping. (Rolled $ROLL, needed 0)"
+            echo "The Chaos Monkey is sleeping. (Rolled $ROLL)"
             echo "strike=false" >> $GITHUB_OUTPUT
           fi
 
@@ -35,7 +35,6 @@ jobs:
       - name: Run Chaos Monkey
         if: steps.dice.outputs.strike == 'true'
         run: cargo run --release
-        working-directory: ./pg-chaos-monkey # Adjust this to your project root if you move the code
         env:
           # In your github repository settings, add this secret
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
