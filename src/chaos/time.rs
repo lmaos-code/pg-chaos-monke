@@ -20,7 +20,7 @@ impl ChaosStrategy for TimeConfusionStrategy {
         // The generated entities map them to `i32` or similar (in this schema, they are i32).
         // Let's add an arbitrary number of seconds (e.g. 5 hours = 18000 seconds)
         format!(
-            "UPDATE \"{}\" SET \"{}\" = \"{}\" + (RANDOM() * 18000)::int WHERE ctid = (SELECT ctid FROM \"{}\" ORDER BY RANDOM() LIMIT 1)",
+            "UPDATE \"{}\" SET \"{}\" = \"{}\" + (RANDOM() * 18000)::int WHERE ctid IN (SELECT ctid FROM \"{}\" ORDER BY RANDOM() LIMIT 1)",
             target.table_name, target.column_name, target.column_name, target.table_name
         )
     }

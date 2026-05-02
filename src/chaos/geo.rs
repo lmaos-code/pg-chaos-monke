@@ -21,7 +21,7 @@ impl ChaosStrategy for GeoChaosStrategy {
         let max_val = if is_lat { 90 } else { 180 };
 
         format!(
-            "UPDATE \"{}\" SET \"{}\" = (RANDOM() * {} * 2) - {} WHERE ctid = (SELECT ctid FROM \"{}\" ORDER BY RANDOM() LIMIT 300)",
+            "UPDATE \"{}\" SET \"{}\" = (RANDOM() * {} * 2) - {} WHERE ctid IN (SELECT ctid FROM \"{}\" ORDER BY RANDOM() LIMIT 300)",
             target.table_name, target.column_name, max_val, max_val, target.table_name
         )
     }

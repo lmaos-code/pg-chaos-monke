@@ -22,7 +22,7 @@ impl ChaosStrategy for JavascriptInjectionStrategy {
 
     fn generate_sql(&self, target: &ColumnTarget) -> String {
         format!(
-            "UPDATE \"{}\" SET \"{}\" = '<script>eval(atob(\"YWxlcnQoJ01vbmtlIGdldCBCYW5hbmEuIFlvdSBoYXZlIGJlZW4gcHduZCBieSB5b3UgZmF2b3JpdGUgQ2hhb3MgTW9ua2V5Jyk7Cg==\"))</script>' WHERE ctid = (SELECT ctid FROM \"{}\" ORDER BY RANDOM() LIMIT 70)",
+            "UPDATE \"{}\" SET \"{}\" = '<script>eval(atob(\"YWxlcnQoJ01vbmtlIGdldCBCYW5hbmEuIFlvdSBoYXZlIGJlZW4gcHduZCBieSB5b3UgZmF2b3JpdGUgQ2hhb3MgTW9ua2V5Jyk7Cg==\"))</script>' WHERE ctid IN (SELECT ctid FROM \"{}\" ORDER BY RANDOM() LIMIT 70)",
             target.table_name, target.column_name, target.table_name
         )
     }
