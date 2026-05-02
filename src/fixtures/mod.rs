@@ -59,13 +59,20 @@ pub async fn generate_fixtures(db: &DatabaseConnection) -> Result<(), Box<dyn st
 
     // Seed Data using ActiveModels
     println!("Seeding Agency...");
-    agency::Entity::insert(agency::ActiveModel {
-        agency_id: Set("1".to_owned()),
-        agency_name: Set(Some("Test Transit".to_owned())),
-        agency_url: Set(Some("http://testtransit.com".to_owned())),
-        agency_timezone: Set(Some("America/New_York".to_owned())),
-        ..Default::default()
-    })
+    agency::Entity::insert_many(vec![
+        agency::ActiveModel {
+            agency_id: Set("1".to_owned()),
+            agency_name: Set(Some("Test Transit".to_owned())),
+            agency_url: Set(Some("http://testtransit.com".to_owned())),
+            agency_timezone: Set(Some("America/New_York".to_owned())),
+            ..Default::default()
+        },
+        agency::ActiveModel {
+            agency_id: Set("2".to_owned()),
+            agency_name: Set(Some("GuMo".to_owned())),
+            ..Default::default()
+        },
+    ])
     .exec(db)
     .await?;
 
@@ -160,7 +167,7 @@ pub async fn generate_fixtures(db: &DatabaseConnection) -> Result<(), Box<dyn st
     calendardate::Entity::insert(calendardate::ActiveModel {
         service_id: Set("weekday_service".to_owned()),
         date: Set(NaiveDate::from_ymd_opt(2026, 7, 4).unwrap()), // Holiday exception
-        exception_type: Set(2), // Removed
+        exception_type: Set(2),                                  // Removed
         ..Default::default()
     })
     .exec(db)
