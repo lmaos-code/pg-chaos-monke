@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: chaos_user
+      POSTGRES_PASSWORD: chaos_password
+      POSTGRES_DB: chaos_db
+    ports:
+      - "5432:5432"

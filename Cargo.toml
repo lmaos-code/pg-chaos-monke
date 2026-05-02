@@ -1,0 +1,12 @@
+[package]
+name = "pg-chaos-monkey"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sea-orm = { version = "1.0", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros"] }
+tokio = { version = "1.0", features = ["full"] }
+rand = "0.8"
+dotenvy = "0.15"
+rust_decimal = "1.41.0"
+chrono = "0.4.44"
