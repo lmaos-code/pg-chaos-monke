@@ -37,3 +37,8 @@ jobs:
         password: ${{ secrets.github_token }}
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Run Chaos Monkey Script
+        run: |
+          pg-chaos-monkey
