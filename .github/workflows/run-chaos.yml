@@ -1,0 +1,39 @@
+name: Run Chaos Monkey
+
+on:
+  schedule:
+    # Trigger the workflow every hour
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allows running manually
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      strike: ${{ steps.dice.outputs.strike }}
+    steps:
+      - name: Roll the Dice (1-in-24 chance)
+        id: dice
+        run: |
+          # Generate a random number between 0 and 23
+          ROLL=$((RANDOM % 24))
+          if [ $ROLL -eq 0 ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "The Chaos Monkey has woken up! (Rolled $ROLL)"
+            echo "strike=true" >> $GITHUB_OUTPUT
+          else
+            echo "The Chaos Monkey is sleeping. (Rolled $ROLL, needed 0)"
+            echo "strike=false" >> $GITHUB_OUTPUT
+          fi
+
+  chaos:
+    needs: decide
+    if: needs.decide.outputs.strike == 'true'
+    runs-on: ubuntu-latest
+    environment: main
+    container:
+      image: ghcr.io/${{ github.repository }}:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
