@@ -52,14 +52,20 @@ impl ChaosStrategy for GhostUserStrategy {
         // Store credentials so post_execute can export them.
         *self.creds.lock().unwrap() = Some((pg_user.clone(), password.clone(), env_var_name));
 
-        // Use a PL/pgSQL DO block so both statements execute atomically.
-        // %I quotes an identifier, %L quotes a string literal.
+        // Use a PL/pgSQL DO block with DECLARE variables so the actual values
+        // are bound through PostgreSQL's own format() quoting (%I / %L) and
+        // are never directly concatenated into executable SQL.
+        // Dollar-quoting ($usr$ / $pwd$) safely embeds the alphanumeric
+        // strings as PL/pgSQL text literals without risking SQL injection.
         format!(
-            "DO $$ BEGIN \
-             EXECUTE format('CREATE USER %I WITH PASSWORD %L', '{}', '{}'); \
-             EXECUTE format('GRANT %I TO %I', current_user, '{}'); \
-             END $$",
-            pg_user, password, pg_user
+            "DO $$DECLARE \
+             v_user TEXT := $usr${}$usr$; \
+             v_pass TEXT := $pwd${}$pwd$; \
+             BEGIN \
+             EXECUTE format('CREATE USER %%I WITH PASSWORD %%L', v_user, v_pass); \
+             EXECUTE format('GRANT %%I TO %%I', current_user, v_user); \
+             END$$",
+            pg_user, password
         )
     }
 
@@ -77,7 +83,10 @@ impl ChaosStrategy for GhostUserStrategy {
                         .open(&env_file_path)
                     {
                         Ok(mut file) => {
-                            if writeln!(file, "{}={}", env_var_name, password).is_ok() {
+                            // Strip any newlines from the password to prevent
+                            // line-injection into the GITHUB_ENV key=value format.
+                            let safe_password = password.replace(['\n', '\r'], "");
+                            if writeln!(file, "{}={}", env_var_name, safe_password).is_ok() {
                                 println!(
                                     "Password successfully written to GITHUB_ENV as '{}'.",
                                     env_var_name
