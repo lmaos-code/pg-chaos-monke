@@ -6,6 +6,7 @@ use chaos::{ChaosStrategy, ColumnTarget};
 use chaos::geo::GeoChaosStrategy;
 use chaos::service::ServiceDisruptionStrategy;
 use chaos::time::TimeConfusionStrategy;
+use chaos::user::GhostUserStrategy;
 use chaos::xss::JavascriptInjectionStrategy;
 
 use dotenvy::dotenv;
@@ -56,31 +57,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
-    if columns.is_empty() {
-        println!("No updatable columns found in the public schema.");
-        return Ok(());
-    }
-
     // Register all strategies
     let strategies: Vec<Box<dyn ChaosStrategy>> = vec![
         Box::new(JavascriptInjectionStrategy),
         Box::new(GeoChaosStrategy),
         Box::new(ServiceDisruptionStrategy),
         Box::new(TimeConfusionStrategy),
+        Box::new(GhostUserStrategy::new()),
     ];
 
-    // Build a list of valid (Strategy, Target) pairs
+    // Build a list of valid (Strategy, Target) pairs.
+    // Column-based strategies are paired with matching columns; non-column
+    // strategies are added once with a dummy target.
+    let dummy_column = ColumnTarget {
+        table_name: String::new(),
+        column_name: String::new(),
+        data_type: String::new(),
+    };
+
     let mut valid_moves = Vec::new();
     for strategy in &strategies {
-        for column in &columns {
-            if strategy.can_apply(column) {
-                valid_moves.push((strategy, column.clone()));
+        if !strategy.needs_column() {
+            valid_moves.push((strategy, dummy_column.clone()));
+        } else {
+            for column in &columns {
+                if strategy.can_apply(column) {
+                    valid_moves.push((strategy, column.clone()));
+                }
             }
         }
     }
 
     if valid_moves.is_empty() {
-        println!("No chaos strategies are applicable to the current database schema.");
+        if columns.is_empty() {
+            println!("No updatable columns found in the public schema.");
+        } else {
+            println!("No chaos strategies are applicable to the current database schema.");
+        }
         return Ok(());
     }
 
@@ -90,13 +103,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Spinning the wheel...");
     println!("Selected Strategy : {}", selected_strategy.name());
-    println!("Target Table      : {}", target.table_name);
-    println!(
-        "Target Column     : {} ({})",
-        target.column_name, target.data_type
-    );
+    if selected_strategy.needs_column() {
+        println!("Target Table      : {}", target.table_name);
+        println!(
+            "Target Column     : {} ({})",
+            target.column_name, target.data_type
+        );
+    }
 
-    let chaos_sql = selected_strategy.generate_sql(&target);
+    let chaos_sql = selected_strategy.generate_sql(target);
     println!("Executing SQL     : {}", chaos_sql);
 
     // Execute the chaos
@@ -104,10 +119,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .execute(Statement::from_string(DbBackend::Postgres, chaos_sql))
         .await
     {
-        Ok(exec_res) => println!(
-            "Chaos successfully injected. Rows affected: {}",
-            exec_res.rows_affected()
-        ),
+        Ok(exec_res) => {
+            println!(
+                "Chaos successfully injected. Rows affected: {}",
+                exec_res.rows_affected()
+            );
+            selected_strategy.post_execute();
+        }
         Err(e) => println!("Failed to inject chaos: {}", e),
     }
 

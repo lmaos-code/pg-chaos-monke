@@ -16,8 +16,8 @@ impl ChaosStrategy for ServiceDisruptionStrategy {
 
     fn generate_sql(&self, target: &ColumnTarget) -> String {
         format!(
-            "UPDATE \"{}\" SET \"{}\" = false WHERE ctid IN (SELECT ctid FROM \"{}\" ORDER BY RANDOM() LIMIT 1)",
-            target.table_name, target.column_name, target.table_name
+            "UPDATE \"{}\" SET \"{}\" = NOT \"{}\" WHERE ctid IN (SELECT ctid FROM \"{}\" ORDER BY RANDOM() LIMIT 1)",
+            target.table_name, target.column_name, target.column_name, target.table_name
         )
     }
 }
