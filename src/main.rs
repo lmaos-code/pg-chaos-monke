@@ -2,11 +2,11 @@ mod chaos;
 mod entity;
 mod fixtures;
 
-use chaos::{ChaosStrategy, ColumnTarget};
 use chaos::geo::GeoChaosStrategy;
 use chaos::service::ServiceDisruptionStrategy;
 use chaos::time::TimeConfusionStrategy;
 use chaos::xss::JavascriptInjectionStrategy;
+use chaos::{ChaosStrategy, ColumnTarget};
 
 use dotenvy::dotenv;
 use rand::seq::SliceRandom;

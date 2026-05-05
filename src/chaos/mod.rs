@@ -15,10 +15,10 @@ pub struct ColumnTarget {
 pub trait ChaosStrategy: Send + Sync {
     /// Name of the strategy for logging.
     fn name(&self) -> &'static str;
-    
+
     /// Determines if this strategy can be applied to the given column/table.
     fn can_apply(&self, target: &ColumnTarget) -> bool;
-    
+
     /// Generates the SQL to execute the chaos on a single random row.
     fn generate_sql(&self, target: &ColumnTarget) -> String;
 }
