@@ -4,6 +4,11 @@ WORKDIR /usr/src/app
 # Copy the entire project
 COPY . .
 
+# install libsodium and neccessary deps
+RUN apt-get update && \
+	apt-get install -y libsodium23 make && \
+    rm -rf /var/lib/apt/lists/*
+
 # Build the release binary
 RUN cargo build --release
 
