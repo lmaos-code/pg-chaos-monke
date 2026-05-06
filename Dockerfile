@@ -13,11 +13,11 @@ RUN apt-get update && \
 RUN cargo build --release
 
 # Create a lightweight runtime image
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # Install ca-certificates required for rustls
 RUN apt-get update && \
-    apt-get install -y ca-certificates && \
+    apt-get install -y ca-certificates libsodium23 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
