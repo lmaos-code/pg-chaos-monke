@@ -15,6 +15,10 @@ impl ChaosStrategy for GeoChaosStrategy {
                 || target.column_name.to_lowercase() == "stop_lon")
     }
 
+    fn needs_column(&self) -> bool {
+        true
+    }
+
     fn generate_sql(&self, target: &ColumnTarget) -> String {
         // Latitude is -90 to 90, Longitude is -180 to 180
         let is_lat = target.column_name.to_lowercase() == "stop_lat";

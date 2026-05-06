@@ -2,11 +2,12 @@ mod chaos;
 mod entity;
 mod fixtures;
 
-use chaos::{ChaosStrategy, ColumnTarget};
 use chaos::geo::GeoChaosStrategy;
+use chaos::ghost::GhostUsersStrategy;
 use chaos::service::ServiceDisruptionStrategy;
 use chaos::time::TimeConfusionStrategy;
 use chaos::xss::JavascriptInjectionStrategy;
+use chaos::{ChaosStrategy, ColumnTarget};
 
 use dotenvy::dotenv;
 use rand::seq::SliceRandom;
@@ -67,14 +68,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(GeoChaosStrategy),
         Box::new(ServiceDisruptionStrategy),
         Box::new(TimeConfusionStrategy),
+        Box::new(GhostUsersStrategy::new()),
     ];
+
+    let dummy_column = ColumnTarget {
+        table_name: String::new(),
+        column_name: String::new(),
+        data_type: String::new(),
+    };
 
     // Build a list of valid (Strategy, Target) pairs
     let mut valid_moves = Vec::new();
     for strategy in &strategies {
-        for column in &columns {
-            if strategy.can_apply(column) {
-                valid_moves.push((strategy, column.clone()));
+        if !strategy.needs_column() {
+            valid_moves.push((strategy, dummy_column.clone()));
+        } else {
+            for column in &columns {
+                if strategy.can_apply(column) {
+                    valid_moves.push((strategy, column.clone()));
+                }
             }
         }
     }
@@ -96,18 +108,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         target.column_name, target.data_type
     );
 
-    let chaos_sql = selected_strategy.generate_sql(&target);
-    println!("Executing SQL     : {}", chaos_sql);
+    let chaos_sql = selected_strategy.generate_sql(target);
+
+    if selected_strategy.is_sensitive() {
+        println!("Executing SQL     : [REDACTED]");
+    } else {
+        println!("Executing SQL     : {}", chaos_sql);
+    }
 
     // Execute the chaos
     match db
         .execute(Statement::from_string(DbBackend::Postgres, chaos_sql))
         .await
     {
-        Ok(exec_res) => println!(
-            "Chaos successfully injected. Rows affected: {}",
-            exec_res.rows_affected()
-        ),
+        Ok(exec_res) => {
+            println!(
+                "Chaos successfully injected. Rows affected: {}",
+                exec_res.rows_affected()
+            );
+            tokio::task::block_in_place(|| {
+                selected_strategy.post_execute();
+            });
+        }
         Err(e) => println!("Failed to inject chaos: {}", e),
     }
 
