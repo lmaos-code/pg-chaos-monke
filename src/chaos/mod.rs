@@ -6,7 +6,7 @@ pub mod service;
 pub mod time;
 pub mod xss;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ColumnTarget {
     pub table_name: String,
     pub column_name: String,

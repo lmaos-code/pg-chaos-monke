@@ -71,34 +71,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(GhostUsersStrategy::new()),
     ];
 
+    // Pick a random valid move
+    let mut rng = rand::thread_rng();
+    let selected_strategy = strategies
+        .choose(&mut rng)
+        .expect("Could not select a strategy");
+
     let dummy_column = ColumnTarget {
         table_name: String::new(),
         column_name: String::new(),
         data_type: String::new(),
     };
 
-    // Build a list of valid (Strategy, Target) pairs
-    let mut valid_moves = Vec::new();
-    for strategy in &strategies {
-        if !strategy.needs_column() {
-            valid_moves.push((strategy, dummy_column.clone()));
-        } else {
-            for column in &columns {
-                if strategy.can_apply(column) {
-                    valid_moves.push((strategy, column.clone()));
-                }
+    let mut target: &ColumnTarget = &dummy_column.clone();
+    let mut valid_columns = Vec::new();
+
+    if selected_strategy.needs_column() {
+        for column in &columns {
+            if selected_strategy.can_apply(column) {
+                valid_columns.push(column.clone());
             }
         }
+        target = valid_columns
+            .choose(&mut rng)
+            .expect("Could not select valid colum for strategy")
     }
-
-    if valid_moves.is_empty() {
-        println!("No chaos strategies are applicable to the current database schema.");
-        return Ok(());
-    }
-
-    // Pick a random valid move
-    let mut rng = rand::thread_rng();
-    let (selected_strategy, target) = valid_moves.choose(&mut rng).expect("Failed to select move");
 
     println!("Spinning the wheel...");
     println!("Selected Strategy : {}", selected_strategy.name());
