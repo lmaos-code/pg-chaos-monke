@@ -17,6 +17,7 @@ jobs:
         password: ${{ secrets.github_token }}
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        GH_ENVIRONMENT_TOKEN: ${{ secrets.GH_ENVIRONMENT_TOKEN }}
     steps:
       - name: Run Chaos Monkey Script
         run: |
