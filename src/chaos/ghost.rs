@@ -119,9 +119,15 @@ impl ChaosStrategy for GhostUsersStrategy {
                 .send();
 
             let sodium_key = match key {
-                Ok(k) => k
-                    .json::<HashMap<String, String>>()
-                    .expect("could not deserialize GitHub encryption key"),
+                Ok(k) => match k.error_for_status() {
+                    Ok(s) => s
+                        .json::<HashMap<String, String>>()
+                        .expect("could not deserialize GitHub encryption key"),
+                    Err(e) => {
+                        println!("API Request failed: {}", e);
+                        return;
+                    }
+                },
                 Err(e) => {
                     println!("Unable to fetch key: {}", e);
                     return;
